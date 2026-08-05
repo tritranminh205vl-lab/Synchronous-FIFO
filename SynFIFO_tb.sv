@@ -1,10 +1,5 @@
 `timescale 1ns/1ps
 
-// ============================================================
-// Self-checking FIFO testbench compatible with Icarus Verilog
-// Compile with: iverilog -Wall -g2012 -s tb_top design.sv testbench.sv -o a.out
-// Run with    : vvp a.out
-// ============================================================
 
 module tb_top;
 
@@ -13,9 +8,7 @@ module tb_top;
     localparam integer COUNT_WIDTH = $clog2(DEPTH) + 1;
     localparam integer RANDOM_CYCLES = 200;
 
-    // --------------------------------------------------------
-    // DUT signals
-    // --------------------------------------------------------
+ 
     reg                    clk;
     reg                    rst_n;
     reg                    push;
@@ -27,27 +20,20 @@ module tb_top;
     wire                   empty;
     wire [COUNT_WIDTH-1:0] count;
 
-    // --------------------------------------------------------
-    // Independent reference model
-    // --------------------------------------------------------
+  
     reg [WIDTH-1:0] ref_mem [0:DEPTH-1];
     integer ref_wr_ptr;
     integer ref_rd_ptr;
     integer ref_count;
     reg [WIDTH-1:0] ref_dout;
 
-    // --------------------------------------------------------
-    // Result counters
-    // --------------------------------------------------------
+  
     integer pass_count;
     integer fail_count;
     integer cycle_count;
     integer seed;
 
-    // --------------------------------------------------------
-    // Manual functional coverage flags
-    // Icarus does not support SystemVerilog covergroup fully.
-    // --------------------------------------------------------
+   
     integer cov_empty_state;
     integer cov_middle_state;
     integer cov_full_state;
@@ -63,10 +49,7 @@ module tb_top;
     integer cov_both_when_empty;
     integer cov_both_when_full;
 
-    // --------------------------------------------------------
-    // DUT instance
-    // This matches the corrected RTL module sync_fifo.
-    // --------------------------------------------------------
+  
     sync_fifo #(
         .DEPTH (DEPTH),
         .WIDTH (WIDTH)
@@ -82,17 +65,12 @@ module tb_top;
         .count (count)
     );
 
-    // --------------------------------------------------------
-    // Clock: 10 ns period
-    // --------------------------------------------------------
+   
     initial begin
         clk = 1'b0;
         forever #5 clk = ~clk;
     end
 
-    // --------------------------------------------------------
-    // Reset the independent reference model
-    // --------------------------------------------------------
     task reset_reference_model;
         integer i;
         begin
@@ -106,9 +84,6 @@ module tb_top;
         end
     endtask
 
-    // --------------------------------------------------------
-    // Check one value and update pass/fail counters
-    // --------------------------------------------------------
     task check_count_value;
         input integer expected;
         begin
@@ -165,9 +140,7 @@ module tb_top;
         end
     endtask
 
-    // --------------------------------------------------------
-    // Synchronous active-low reset
-    // --------------------------------------------------------
+
     task reset_dut;
         begin
             // Drive reset away from the active clock edge.
@@ -195,10 +168,7 @@ module tb_top;
         end
     endtask
 
-    // --------------------------------------------------------
-    // Manual functional coverage sampling
-    // State is sampled before the requested operation.
-    // --------------------------------------------------------
+ 
     task sample_manual_coverage;
         input push_i;
         input pop_i;
@@ -237,10 +207,7 @@ module tb_top;
         end
     endtask
 
-    // --------------------------------------------------------
-    // Drive one FIFO cycle and compare DUT against reference.
-    // Inputs change at negedge; DUT samples at next posedge.
-    // --------------------------------------------------------
+ 
     task apply_cycle;
         input             push_i;
         input             pop_i;
@@ -265,7 +232,7 @@ module tb_top;
             pre_count = ref_count;
             sample_manual_coverage(push_i, pop_i, pre_count);
 
-            // Acceptance depends only on the model's pre-edge state.
+    
             write_accept = push_i && (pre_count < DEPTH);
             read_accept  = pop_i  && (pre_count > 0);
 
@@ -274,7 +241,6 @@ module tb_top;
             next_wr_ptr     = ref_wr_ptr;
             next_rd_ptr     = ref_rd_ptr;
 
-            // A successful pop updates registered dout at this edge.
             if (read_accept) begin
                 expected_dout = ref_mem[ref_rd_ptr];
 
@@ -300,7 +266,7 @@ module tb_top;
             expected_full  = (expected_count == DEPTH);
             expected_empty = (expected_count == 0);
 
-            // Wait until DUT has sampled inputs and completed NBA updates.
+         
             @(posedge clk);
             #1;
 
@@ -329,9 +295,7 @@ module tb_top;
         end
     endtask
 
-    // --------------------------------------------------------
-    // Coverage report
-    // --------------------------------------------------------
+   
     task print_coverage;
         integer hits;
         integer total;
