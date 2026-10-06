@@ -1,0 +1,28 @@
+name: RTL Regression
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  basic-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install open-source HDL tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog verilator yosys
+
+      - name: Run self-checking regression
+        run: make basic
+
+      - name: RTL lint
+        run: make lint
+
+      - name: Synthesis sanity check
+        run: make synth

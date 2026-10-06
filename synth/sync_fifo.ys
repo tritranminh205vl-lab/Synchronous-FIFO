@@ -1,0 +1,10 @@
+# Yosys synthesis/check script for the default FIFO parameters.
+read_verilog -sv -D SYNTHESIS rtl/sync_fifo.sv
+hierarchy -check -top sync_fifo
+proc
+opt
+memory
+opt
+check
+stat
+write_json build/sync_fifo_netlist.json

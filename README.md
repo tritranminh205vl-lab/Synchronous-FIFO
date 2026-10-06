@@ -1,533 +1,237 @@
-# Synchronous FIFO — RTL Design & Verification
+# Synchronous FIFO — RTL + Design Verification Project
 
-A complete RTL-to-verification project implementing a parameterizable synchronous FIFO in SystemVerilog, verified with a structured testbench featuring a scoreboard, manual functional coverage, and assertions.
+A portfolio-style SystemVerilog project for a parameterized **single-clock synchronous FIFO**, upgraded from the original submitted RTL/testbench into a structured RTL-DV repository.
 
-**Author:** Trần Minh Trí (Student ID: 232071187)
+The design follows the counter-based synchronous FIFO architecture: one common clock is used for read and write, writes occur only when the FIFO is not full, reads occur only when it is not empty, and `count` determines the `full`/`empty` conditions.
 
-## Table of Contents
-- [Overview](#overview)
-- [Project Structure](#project-structure)
-- [RTL Design](#rtl-design)
-- [Testbench Architecture](#testbench-architecture)
-- [Verification Plan](#verification-plan)
-- [Simulation Results](#simulation-results)
-- [How to Run](#how-to-run)
-
----
-
-## Overview
-
-| Item | Detail |
-| :--- | :--- |
-| **Module** | `fifo_sync` |
-| **Language** | SystemVerilog (IEEE 1800-2017) |
-| **Default Config** | Depth = 8, Width = 8-bit |
-| **Reset** | Asynchronous, active-low (`rst_n`) |
-| **Output** | Registered (`r_data` valid 1 cycle after `r_en`) |
-
----
-
-## Project Structure
+## Architecture
 
 ```text
-.
-├── design/
-│   └── fifo_sync.sv
+                       COMMON CLOCK
+                           |
+           +---------------+---------------+
+           |                               |
+      push / din                         pop
+           |                               |
+           v                               v
+    +--------------+                +--------------+
+    | Write logic  |                | Read logic   |
+    | + write ptr  |                | + read ptr   |
+    +------+-------+                +------+-------+
+           |                               |
+           +----------+  FIFO  +-----------+
+                      | memory |
+                      +---+----+
+                          |
+                          v
+                         dout
+
+                occupancy counter
+                  /           \
+          count == 0       count == DEPTH
+              |                 |
+            empty              full
+```
+
+Default configuration:
+
+```text
+DEPTH      = 8 entries
+DATA_WIDTH = 8 bits
+COUNT_WIDTH = clog2(DEPTH+1) = 4 bits
+Reset      = synchronous active-low
+Read data  = registered
+```
+
+## Boundary behavior
+
+This repository makes simultaneous-request behavior explicit:
+
+| FIFO state before edge | push | pop | Result |
+|---|---:|---:|---|
+| Empty | 1 | 1 | push accepted, pop rejected |
+| Middle | 1 | 1 | both accepted, count unchanged |
+| Full | 1 | 1 | pop accepted, push rejected |
+
+This matches the baseline project's accepted-operation philosophy and avoids ambiguous testbench expectations.
+
+## Project structure
+
+```text
+sync_fifo_rtl_dv_project/
+├── baseline/
+│   ├── SynFIFO_original.v
+│   └── SynFIFO_tb_original.v
+├── rtl/
+│   ├── sync_fifo.sv
+│   └── files.f
 ├── tb/
-│   ├── fifo_if.sv
-│   ├── fifo_top.sv
-│   └── ...
-├── fifo_sync_spec.pdf
+│   ├── basic/
+│   │   ├── tb_sync_fifo.sv
+│   │   └── files.f
+│   ├── sva/
+│   │   ├── sync_fifo_sva.sv
+│   │   └── sync_fifo_bind.sv
+│   └── uvm/
+│       ├── sync_fifo_if.sv
+│       ├── sync_fifo_pkg.sv
+│       ├── sync_fifo_txn.svh
+│       ├── sync_fifo_driver.svh
+│       ├── sync_fifo_monitor.svh
+│       ├── sync_fifo_scoreboard.svh
+│       ├── sync_fifo_coverage.svh
+│       ├── sync_fifo_agent.svh
+│       ├── sync_fifo_sequences.svh
+│       ├── sync_fifo_env.svh
+│       ├── sync_fifo_test.svh
+│       ├── tb_sync_fifo_uvm.sv
+│       └── files.f
+├── synth/
+│   └── sync_fifo.ys
+├── docs/
+│   ├── RTL_SPEC.md
+│   ├── DV_PLAN.md
+│   ├── TRACEABILITY.md
+│   ├── BASELINE_REVIEW.md
+│   ├── INTERVIEW_QA.md
+│   ├── GITHUB_GUIDE.md
+│   └── evidence/
+├── scripts/
+│   ├── run_basic.sh
+│   ├── run_basic.bat
+│   └── run_yosys.bat
+├── .github/workflows/rtl-regression.yml
+├── .gitignore
+├── Makefile
 └── README.md
-
----
-
-## RTL Design
-
-### Parameters
-
-| Parameter | Default | Description                           |
-| --------- | ------: | ------------------------------------- |
-| `DEPTH`   |       8 | Number of entries in the FIFO         |
-| `WIDTH`   |       8 | Width of each FIFO data entry in bits |
-
-### Port List
-
-| Port    | Direction | Width                   | Description                                      |
-| ------- | --------- | ----------------------- | ------------------------------------------------ |
-| `clk`   | Input     | 1                       | System clock                                     |
-| `rst_n` | Input     | 1                       | Active-low reset                                 |
-| `push`  | Input     | 1                       | Request to write data into the FIFO              |
-| `pop`   | Input     | 1                       | Request to read data from the FIFO               |
-| `din`   | Input     | `[WIDTH-1:0]`           | Input data                                       |
-| `dout`  | Output    | `[WIDTH-1:0]`           | Registered FIFO output data                      |
-| `empty` | Output    | 1                       | Asserted when the FIFO contains no valid entries |
-| `full`  | Output    | 1                       | Asserted when the FIFO reaches `DEPTH` entries   |
-| `count` | Output    | `[$clog2(DEPTH+1)-1:0]` | Current number of entries stored in the FIFO     |
-
-### FIFO Architecture
-
-The design contains:
-
-* A memory array used to store FIFO data.
-* A circular write pointer used to select the next write location.
-* A circular read pointer used to select the next read location.
-* An occupancy counter used to generate the `full` and `empty` flags.
-* Logic for handling independent and simultaneous push/pop requests.
-
-A write operation is accepted when:
-
-```systemverilog
-push && !full
 ```
 
-A read operation is accepted when:
+## What was improved
 
-```systemverilog
-pop && !empty
+Your original project already had a strong portable self-checking testbench with reference memory, directed cases, random traffic, waveform dumping, and manual coverage. This revision keeps those strengths but makes the project more suitable for an RTL/DV portfolio:
+
+- synthesizable SystemVerilog RTL separated from verification code;
+- explicit specification and boundary policy;
+- independent cycle-by-cycle scoreboard;
+- 1000-cycle random regression after directed tests;
+- state x operation coverage matrix;
+- pointer-wrap and reset-while-nonempty coverage;
+- SVA assertions for invariants and temporal behavior;
+- UVM driver/monitor/scoreboard/coverage architecture;
+- Yosys synthesis sanity script;
+- GitHub Actions simulation/lint/synthesis CI;
+- requirement-to-verification traceability.
+
+## Run the portable regression
+
+### Linux / Git Bash with Make
+
+```bash
+make basic
 ```
 
-For a valid simultaneous push and pop while the FIFO is partially filled, one item is written and one item is removed during the same cycle, therefore the FIFO occupancy remains unchanged.
+Equivalent manual commands:
 
----
+```bash
+mkdir -p build
+iverilog -g2012 -Wall -s tb_sync_fifo \
+  -o build/sync_fifo_basic.vvp \
+  rtl/sync_fifo.sv tb/basic/tb_sync_fifo.sv
+vvp build/sync_fifo_basic.vvp
+```
 
-## Testbench Architecture
+### Windows without Make
 
-The verification environment is implemented as a **self-checking SystemVerilog testbench** without UVM.
+```bat
+scripts\run_basic.bat
+```
 
-The main verification flow is:
+The testbench writes:
 
 ```text
-Stimulus
-   |
-   v
-apply_cycle()
-   |
-   +------> DUT
-   |
-   +------> Reference Model
-                |
-                v
-          Expected Result
-                |
-                v
-             Scoreboard
-                |
-          PASS / FAIL Check
+sync_fifo.vcd
 ```
 
-### Main Components
+Open it in GTKWave or another waveform viewer.
 
-| Component          | Description                                                               |
-| ------------------ | ------------------------------------------------------------------------- |
-| Stimulus Generator | Generates directed and randomized `push`, `pop`, and `din` transactions   |
-| `apply_cycle` Task | Drives one complete FIFO transaction and calculates the expected behavior |
-| Reference Memory   | Stores expected FIFO data independently from the DUT                      |
-| Reference Pointers | Track expected read and write positions                                   |
-| Reference Counter  | Tracks the expected FIFO occupancy                                        |
-| Scoreboard         | Compares DUT outputs against expected values                              |
-| Manual Coverage    | Tracks whether important FIFO states and corner cases have been exercised |
-
----
-
-## Reference Model
-
-The testbench maintains an independent FIFO model using:
-
-```systemverilog
-ref_mem
-ref_wr_ptr
-ref_rd_ptr
-ref_count
-ref_dout
-```
-
-For each test cycle, the reference model first determines whether the requested operations should be accepted:
-
-```systemverilog
-write_accept = push_i && (pre_count < DEPTH);
-read_accept  = pop_i  && (pre_count > 0);
-```
-
-The expected FIFO occupancy is then calculated from the accepted operations:
-
-```systemverilog
-case ({write_accept, read_accept})
-    2'b10: expected_count = pre_count + 1;
-    2'b01: expected_count = pre_count - 1;
-    default: expected_count = pre_count;
-endcase
-```
-
-This reference model does **not** rely on the DUT `full` or `empty` outputs when deciding whether an operation should succeed. This allows incorrect DUT status flags to be detected by the scoreboard.
-
----
-
-## Scoreboard
-
-After each positive clock edge, the testbench waits for the RTL nonblocking assignments to update and then checks:
+A clean run should end with a zero failure count and:
 
 ```text
-count
-full
-empty
-dout
-```
-
-The following checking tasks are used:
-
-```systemverilog
-check_count_value(expected_count);
-check_full_value(expected_full);
-check_empty_value(expected_empty);
-check_dout_value(expected_dout);
-```
-
-Each successful comparison increments the pass counter. Any mismatch increments the failure counter and prints diagnostic information to the simulation log.
-
----
-
-## Verification Plan
-
-The following scenarios are verified.
-
-| Test Case               | Description                                                     | Priority |
-| ----------------------- | --------------------------------------------------------------- | -------- |
-| Reset                   | Verify FIFO returns to its initial empty state                  | Critical |
-| Basic Push              | Write one item and verify occupancy increases                   | High     |
-| Basic Pop               | Read one item and verify correct output data                    | High     |
-| FIFO Full               | Fill the FIFO and verify `full` assertion                       | High     |
-| FIFO Empty              | Drain the FIFO and verify `empty` assertion                     | High     |
-| Push When Full          | Verify a write request is rejected when full                    | Critical |
-| Pop When Empty          | Verify a read request is rejected when empty                    | Critical |
-| Simultaneous Push + Pop | Verify concurrent read/write behavior                           | High     |
-| Fill Then Drain         | Verify FIFO data ordering across a complete fill/drain sequence | High     |
-| Pointer Wraparound      | Verify read/write pointers correctly wrap from `DEPTH-1` to `0` | High     |
-| Random Push/Pop         | Exercise different occupancy levels with randomized operations  | High     |
-| Boundary Conditions     | Verify simultaneous push/pop at empty and full states           | Critical |
-
----
-
-## Important Corner Cases
-
-### Push When FIFO Is Full
-
-When:
-
-```text
-count = DEPTH
-push  = 1
-```
-
-the write request must be rejected.
-
-Expected behavior:
-
-```text
-count remains DEPTH
-full remains asserted
-stored FIFO data is not overwritten
-```
-
-### Pop When FIFO Is Empty
-
-When:
-
-```text
-count = 0
-pop   = 1
-```
-
-the read request must be rejected.
-
-Expected behavior:
-
-```text
-count remains 0
-empty remains asserted
-dout remains unchanged
-```
-
-### Push and Pop in the Middle State
-
-For:
-
-```text
-0 < count < DEPTH
-push = 1
-pop  = 1
-```
-
-both operations are accepted.
-
-Expected behavior:
-
-```text
-one item is removed
-one item is inserted
-count remains unchanged
-FIFO ordering is preserved
-```
-
-### Push and Pop While Empty
-
-For:
-
-```text
-count = 0
-push = 1
-pop  = 1
-```
-
-the reference model treats:
-
-```text
-write_accept = 1
-read_accept  = 0
-```
-
-Therefore the new item is written and the occupancy becomes `1`.
-
-### Push and Pop While Full
-
-For:
-
-```text
-count = DEPTH
-push = 1
-pop  = 1
-```
-
-the reference model treats:
-
-```text
-write_accept = 0
-read_accept  = 1
-```
-
-Therefore one item is read and the occupancy decreases to `DEPTH-1`.
-
----
-
-## Manual Functional Coverage
-
-Because the project is designed to run with **Icarus Verilog**, manual functional coverage counters are used instead of SystemVerilog `covergroup`.
-
-The following coverage points are tracked:
-
-| Coverage Bin      | Description                               | Goal |
-| ----------------- | ----------------------------------------- | ---: |
-| `empty state`     | FIFO occupancy is exactly `0`             |    1 |
-| `middle state`    | FIFO occupancy is between `0` and `DEPTH` |    1 |
-| `full state`      | FIFO occupancy is exactly `DEPTH`         |    1 |
-| `idle`            | Neither push nor pop is requested         |    1 |
-| `push only`       | Push without pop                          |    1 |
-| `pop only`        | Pop without push                          |    1 |
-| `push + pop`      | Push and pop requested simultaneously     |    1 |
-| `push when full`  | Push request while FIFO is full           |    1 |
-| `pop when empty`  | Pop request while FIFO is empty           |    1 |
-| `both in middle`  | Push and pop while partially filled       |    1 |
-| `both when empty` | Push and pop while FIFO is empty          |    1 |
-| `both when full`  | Push and pop while FIFO is full           |    1 |
-
-Maximum manual functional coverage:
-
-```text
-12 / 12 = 100%
-```
-
----
-
-## Simulation Timing Strategy
-
-The testbench drives DUT inputs at the **falling edge** of the clock:
-
-```systemverilog
-@(negedge clk);
-
-push = push_i;
-pop  = pop_i;
-din  = din_i;
-```
-
-This gives the input signals sufficient time to settle before the DUT samples them at the next positive edge.
-
-The DUT is evaluated at:
-
-```systemverilog
-@(posedge clk);
-```
-
-The testbench then waits:
-
-```systemverilog
-#1;
-```
-
-before checking the outputs.
-
-This delay allows nonblocking assignments inside the RTL to complete before scoreboard comparison and helps avoid simulation race conditions.
-
----
-
-## How to Run
-
-The project can be simulated directly in the browser using **EDA Playground**.
-
-### EDA Playground Configuration
-
-Use the following settings:
-
-```text
-Language:
-SystemVerilog / Verilog
-
-Simulator:
-Icarus Verilog
-```
-
-Recommended option:
-
-```text
-Open EPWave after run
-```
-
-### Files
-
-Place the RTL in the **Design** window:
-
-```text
-SynFIFO.sv
-```
-
-Place the testbench in the **Testbench** window:
-
-```text
-SynFIFO_tb.sv
-```
-
-No UVM library is required.
-
-No UVM checkbox is required.
-
-No `+UVM_TESTNAME` option is required.
-
----
-
-## Run the Simulation
-
-Click:
-
-```text
-Run
-```
-
-The simulation console will show every FIFO transaction.
-
-Example:
-
-```text
-[46000][CYCLE 1] push=0 pop=0 din=0x00 | dout=0x00 count=0 empty=1 full=0
-[56000][CYCLE 2] push=1 pop=0 din=0xA5 | dout=0x00 count=1 empty=0 full=0
-[66000][CYCLE 3] push=0 pop=1 din=0x00 | dout=0xA5 count=0 empty=1 full=0
-```
-
----
-
-## Expected Final Report
-
-A successful simulation should end with a report similar to:
-
-```text
-========================================
-FINAL SCOREBOARD REPORT
-========================================
-PASS CHECKS : <number of successful checks>
-FAIL CHECKS : 0
-REF COUNT   : <final reference count>
-========================================
-
-========================================
-MANUAL FUNCTIONAL COVERAGE
-========================================
-empty state        : 1
-middle state       : 1
-full state         : 1
-idle               : 1
-push only          : 1
-pop only           : 1
-push + pop         : 1
-push when full     : 1
-pop when empty     : 1
-both in middle     : 1
-both when empty    : 1
-both when full     : 1
-
-Coverage           : 12/12 = 100%
-========================================
-
 FINAL RESULT: TEST PASSED
 ```
 
-The exact number of `PASS CHECKS` depends on the number of directed and randomized test cycles executed.
+## Run lint
 
-The important acceptance criteria are:
+With Verilator installed:
 
-```text
-FAIL CHECKS = 0
-Coverage    = 12/12 = 100%
-FINAL RESULT: TEST PASSED
+```bash
+make lint
 ```
 
----
+## Run synthesis sanity check
 
-## Waveform Analysis
+With Yosys installed:
 
-The testbench generates a VCD waveform file that can be opened using **EPWave**.
-
-Recommended signals:
-
-```text
-clk
-rst_n
-push
-pop
-din
-dout
-count
-empty
-full
+```bash
+make synth
 ```
 
-The waveform should be used to visually confirm:
+On Windows:
 
-* Reset behavior
-* Basic push operation
-* Basic pop operation
-* FIFO full condition
-* FIFO empty condition
-* Push while full
-* Pop while empty
-* Simultaneous push and pop
-* Pointer wraparound
-* FIFO fill and drain sequence
+```bat
+scripts\run_yosys.bat
+```
 
----
+This is not physical implementation or timing signoff; it is a fast check that the RTL can be elaborated/synthesized by an open-source synthesis flow.
 
-## Verification Strategy Summary
+## UVM
 
-This project uses a lightweight verification methodology suitable for learning RTL verification concepts without requiring a commercial UVM simulator.
+The `tb/uvm/` environment contains:
 
-The verification environment demonstrates several important Design Verification concepts:
+```text
+sequence -> sequencer -> driver -> DUT
+                             |
+                         monitor
+                         /     \
+                 scoreboard   coverage
+```
 
-* Directed testing
-* Randomized stimulus
-* Independent reference modeling
-* Self-checking scoreboard
-* Functional coverage
-* Corner-case testing
-* Boundary-condition verification
-* Waveform debugging
-* Automated PASS/FAIL reporting
+For Questa with a source UVM installation:
 
-These concepts provide a foundation for more advanced SystemVerilog and UVM-based verification environments.
+```bash
+make uvm-questa UVM_HOME=/path/to/uvm
+```
+
+You can adapt the same file list for VCS or Xcelium.
+
+## Verification philosophy
+
+The project does **not** use waveform inspection as the primary pass/fail method. A waveform is debug evidence. Correctness is judged by:
+
+```text
+independent reference model
+        +
+scoreboard comparisons
+        +
+assertions
+        +
+functional coverage
+        +
+repeatable regression
+```
+
+## Documents to read in order
+
+1. `docs/RTL_SPEC.md` — exact FIFO behavior.
+2. `docs/DV_PLAN.md` — verification strategy and test matrix.
+3. `docs/TRACEABILITY.md` — requirement-to-check mapping.
+4. `docs/BASELINE_REVIEW.md` — what changed from the original project.
+5. `docs/WAVEFORM_GUIDE.md` — what to inspect in simulation.
+6. `docs/INTERVIEW_QA.md` — questions you should be able to answer yourself.
+7. `docs/GITHUB_GUIDE.md` — publish and maintain the project correctly.
+
+## Reference basis
+
+The architecture was based on the linked VLSI Verify synchronous FIFO material, especially its discussion of synchronous operation and the counter-based Method 3. This repository does not copy that tutorial implementation; it defines a stricter accepted-operation policy and adds a full verification structure around the design.
+
+Reference: `https://vlsiverify.com/verilog/verilog-codes/synchronous-fifo/`

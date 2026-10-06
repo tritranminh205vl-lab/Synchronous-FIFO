@@ -1,0 +1,26 @@
+# Simulation/build output
+build/
+*.vcd
+*.fst
+*.wlf
+*.vvp
+*.log
+transcript
+work/
+vsim.wlf
+
+# Synthesis output
+*.json
+*.blif
+*.edif
+
+# Editors/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*~
