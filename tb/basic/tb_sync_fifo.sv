@@ -1,17 +1,4 @@
 `timescale 1ns/1ps
-
-// -----------------------------------------------------------------------------
-// Self-checking, simulator-light testbench.
-// Intended for Icarus Verilog (-g2012), Questa, VCS, Xcelium, etc.
-//
-// Verification strategy:
-//   1. Directed corner cases.
-//   2. Independent reference model.
-//   3. Cycle-by-cycle scoreboard.
-//   4. Protocol/invariant checks.
-//   5. Constrained pseudo-random traffic.
-//   6. Manual functional coverage for open-source simulator portability.
-// -----------------------------------------------------------------------------
 module tb_sync_fifo;
 
     localparam int unsigned DEPTH         = 8;
