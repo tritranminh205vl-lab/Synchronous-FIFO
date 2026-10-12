@@ -1,22 +1,4 @@
 `timescale 1ns/1ps
-
-// -----------------------------------------------------------------------------
-// Synchronous FIFO
-// -----------------------------------------------------------------------------
-// Architecture:
-//   - Single clock domain for both push and pop.
-//   - Counter-based full/empty detection.
-//   - Registered read data (dout updates only on an accepted pop).
-//   - Synchronous, active-low reset.
-//
-// Boundary policy (intentional and verified):
-//   * empty + push + pop : push is accepted, pop is rejected -> count becomes 1
-//   * full  + push + pop : pop is accepted, push is rejected -> count becomes DEPTH-1
-//
-// This policy uses the FIFO state at the beginning of the cycle. It keeps the
-// interface simple and deterministic. A higher-throughput FIFO could choose a
-// different boundary policy, but that would be a different specification.
-// -----------------------------------------------------------------------------
 module sync_fifo #(
     parameter int unsigned DEPTH      = 8,
     parameter int unsigned DATA_WIDTH = 8
