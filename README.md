@@ -126,7 +126,11 @@ Your original project already had a strong portable self-checking testbench with
 
 On **2026-10-16**, an EDA Playground run using **QuestaSim 2025.2** completed the basic testbench with the SVA module loaded: **1,073 cycles, 6,450 passed scoreboard checks, 0 failed checks**, and no reported assertion failures. Manual functional coverage reached **27/27 buckets (100%)**; this is not assertion or UVM covergroup coverage.
 
-See the [run report and console excerpts](docs/evidence/questa_sva_2026-10-16.md) for provenance, warnings, and scope. This user-supplied run is not tied to an exact source commit. **UVM simulation remains unverified by this result.**
+See the [basic + SVA run report](docs/evidence/questa_sva_2026-10-16.md) for provenance, warnings, and scope.
+
+A separate **UVM 1.2 + SVA** run on the same day completed `sync_fifo_test` with **4,176 scoreboard checks**, **0 UVM warnings/errors/fatals**, and no reported assertion failures. Simulation finished at **10,485 ns**, with final reference occupancy **2** (the test does not require a final drain). See the [UVM run report and console excerpts](docs/evidence/questa_uvm_2026-10-16.md).
+
+Both results are user-supplied EDA Playground runs, not CI executions pinned to an exact source commit. The UVM browser testbench includes a coverage-subscriber argument-name fix; the result does not establish a pass for the unmodified repository sources. No UVM covergroup or assertion coverage percentage was reported.
 
 ## Run the portable regression
 
