@@ -122,6 +122,12 @@ Your original project already had a strong portable self-checking testbench with
 - GitHub Actions simulation/lint/synthesis CI;
 - requirement-to-verification traceability.
 
+## Recorded verification result
+
+On **2026-10-16**, an EDA Playground run using **QuestaSim 2025.2** completed the basic testbench with the SVA module loaded: **1,073 cycles, 6,450 passed scoreboard checks, 0 failed checks**, and no reported assertion failures. Manual functional coverage reached **27/27 buckets (100%)**; this is not assertion or UVM covergroup coverage.
+
+See the [run report and console excerpts](docs/evidence/questa_sva_2026-10-16.md) for provenance, warnings, and scope. This user-supplied run is not tied to an exact source commit. **UVM simulation remains unverified by this result.**
+
 ## Run the portable regression
 
 ### Linux / Git Bash with Make
