@@ -2,7 +2,7 @@
 
 ## Result
 
-**PASS for the supplied simulation run:** the UVM test completed with 4,176 scoreboard checks, zero UVM errors/fatals, and no reported assertion failures.
+**PASS for my recorded simulation run:** the UVM test completed with 4,176 scoreboard checks, zero UVM errors/fatals, and no reported assertion failures.
 
 | Item | Observed result |
 | --- | --- |
@@ -23,9 +23,9 @@ Final occupancy 2 is not a failure: the random sequence ends with an idle transa
 
 ## Evidence provenance
 
-The project owner ran the simulation on EDA Playground and supplied the console transcript. This report documents that output; it is not a fresh CI run or an independently reproduced simulation.
+I ran this simulation on EDA Playground and recorded the console transcript. This report documents my run rather than a fresh CI execution or an independently reproduced simulation.
 
-The prepared browser testbench combined the project's UVM components, SVA module, and bind declaration into one file. The coverage subscriber's `write` argument was renamed from `tr` to `t` to match the UVM base-class declaration. This report does not imply that the unmodified repository sources were simulated. The exact browser source snapshot, source commit, playground URL, and random seed were not included with the transcript.
+I combined my UVM components, SVA module, and bind declaration into one browser testbench file. I renamed the coverage subscriber's `write` argument from `tr` to `t` to match the UVM base-class declaration. I therefore do not treat this run as verification of the unmodified repository sources. I did not retain the exact browser source snapshot, source commit, playground URL, or random seed with the transcript.
 
 ## Testbench scope
 
@@ -83,11 +83,11 @@ Done
 
 ## Warnings and limits
 
-- `vlog-2650` recommends `-mfcu -cuname` for compilation-unit-scope bind declarations. The supplied run nevertheless explicitly loaded the SVA module.
+- `vlog-2650` recommends `-mfcu -cuname` for compilation-unit-scope bind declarations. My recorded run nevertheless explicitly loaded the SVA module.
 - `vopt-10587` warns that `+acc` reduces optimization and recommends `-access/-debug` for visibility.
 - These two tool warnings are separate from the zero UVM warning count.
-- No functional covergroup percentage, assertion coverage, or code coverage report was supplied; no claim of 100% coverage is made for this run.
-- An intentional assertion-failure control run has not been supplied.
+- I did not record a functional covergroup percentage, assertion coverage, or code coverage report, so I make no claim of 100% coverage for this run.
+- I have not recorded an intentional assertion-failure control run.
 - The UVM test applies initial reset; reset during active traffic is not covered by this test.
 - Passing this run does not establish correctness for all seeds, parameter configurations, or untested scenarios.
 

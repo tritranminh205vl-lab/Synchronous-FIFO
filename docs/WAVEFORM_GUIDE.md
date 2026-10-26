@@ -1,8 +1,8 @@
 # Waveform Debug Guide
 
-Use this guide when opening `sync_fifo.vcd` in GTKWave, Surfer, EPWave, or another viewer.
+I use this checklist when inspecting `sync_fifo.vcd` in GTKWave, Surfer, EPWave, or another viewer.
 
-Add signals in this order:
+I arrange the interface signals in this order:
 
 ```text
 clk
@@ -16,7 +16,7 @@ empty
 full
 ```
 
-If your simulator exposes internal DUT signals, also add:
+When the simulator exposes internal DUT signals, I also add:
 
 ```text
 dut.push_accept
@@ -27,7 +27,7 @@ dut.rptr
 
 ## Reset
 
-At a rising edge where `rst_n=0`, the logical state resets. After the edge you should see:
+At a rising edge where `rst_n=0`, the logical state resets. I expect the following state after the edge:
 
 ```text
 count = 0
@@ -90,7 +90,7 @@ dout = old queue head
 new din appended to queue tail
 ```
 
-This is an important waveform to capture for a DV interview.
+I include this scenario when explaining simultaneous FIFO operations.
 
 ## Push while full
 
@@ -153,7 +153,7 @@ With `DEPTH=8`, after an accepted operation at pointer 7, the corresponding poin
 
 ## What a good screenshot should show
 
-For a portfolio or interview, take a few zoomed screenshots rather than one huge waveform:
+For my project presentation, I use focused waveform views to explain the following scenarios:
 
 1. reset + first push;
 2. FIFO reaching full + blocked overflow;

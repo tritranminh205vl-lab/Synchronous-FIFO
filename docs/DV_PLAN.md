@@ -2,14 +2,14 @@
 
 ## 1. Verification objective
 
-Prove that the FIFO preserves ordering, never overflows or underflows, reports occupancy correctly, and follows the documented boundary policy for all combinations of `push`, `pop`, `empty`, and `full`.
+My verification objective is to check that the FIFO preserves ordering, prevents overflow and underflow, reports occupancy correctly, and follows the documented boundary policy for all combinations of `push`, `pop`, `empty`, and `full`.
 
-The verification environment is deliberately split into two levels:
+I split my verification environment into two levels:
 
 1. **Portable self-checking testbench** for fast regressions with Icarus/Questa/VCS/Xcelium.
 2. **UVM environment** for transaction-level stimulus, monitor-based checking, functional coverage, and scalable regression structure.
 
-Assertions independently check interface invariants and temporal behavior.
+I added assertions to independently check interface invariants and temporal behavior.
 
 ## 2. Verification architecture
 
@@ -34,7 +34,7 @@ sequence ------>| driver         |
 Assertions observe DUT interface behavior independently.
 ```
 
-The scoreboard does not receive expected results from the driver. It reconstructs expected FIFO behavior from transactions observed by the monitor.
+I designed the scoreboard to reconstruct expected FIFO behavior from transactions observed by the monitor, independently of the driver.
 
 ## 3. Reference model
 
@@ -124,7 +124,7 @@ UVM covergroups implement the main occupancy/operation cross and illegal request
 
 ## 8. Exit criteria
 
-A reasonable project-level signoff target is:
+I use the following project-level exit criteria as targets; this list does not claim that every target has been met:
 
 - zero scoreboard mismatches;
 - zero assertion failures;

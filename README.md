@@ -1,8 +1,8 @@
 # Synchronous FIFO — RTL + Design Verification Project
 
-A portfolio-style SystemVerilog project for a parameterized **single-clock synchronous FIFO**, upgraded from the original submitted RTL/testbench into a structured RTL-DV repository.
+I developed this SystemVerilog project for a parameterized **single-clock synchronous FIFO**. I expanded my original RTL and self-checking testbench into a structured repository covering RTL design, verification, assertions, synthesis checks, and documentation.
 
-The design follows the counter-based synchronous FIFO architecture: one common clock is used for read and write, writes occur only when the FIFO is not full, reads occur only when it is not empty, and `count` determines the `full`/`empty` conditions.
+I implemented the design using the counter-based synchronous FIFO architecture: one common clock is used for read and write, writes occur only when the FIFO is not full, reads occur only when it is not empty, and `count` determines the `full`/`empty` conditions.
 
 ## Architecture
 
@@ -45,7 +45,7 @@ Read data  = registered
 
 ## Boundary behavior
 
-This repository makes simultaneous-request behavior explicit:
+I explicitly defined the behavior of simultaneous requests:
 
 | FIFO state before edge | push | pop | Result |
 |---|---:|---:|---|
@@ -53,7 +53,7 @@ This repository makes simultaneous-request behavior explicit:
 | Middle | 1 | 1 | both accepted, count unchanged |
 | Full | 1 | 1 | pop accepted, push rejected |
 
-This matches the baseline project's accepted-operation philosophy and avoids ambiguous testbench expectations.
+I retained the accepted-operation policy from my baseline implementation so that the RTL and testbench use the same boundary expectations.
 
 ## Project structure
 
@@ -106,9 +106,9 @@ sync_fifo_rtl_dv_project/
 └── README.md
 ```
 
-## What was improved
+## How I developed the project
 
-Your original project already had a strong portable self-checking testbench with reference memory, directed cases, random traffic, waveform dumping, and manual coverage. This revision keeps those strengths but makes the project more suitable for an RTL/DV portfolio:
+My original implementation included a portable self-checking testbench with reference memory, directed cases, random traffic, waveform dumping, and manual coverage. I retained those features and expanded the project with:
 
 - synthesizable SystemVerilog RTL separated from verification code;
 - explicit specification and boundary policy;
@@ -124,13 +124,13 @@ Your original project already had a strong portable self-checking testbench with
 
 ## Recorded verification result
 
-On **2026-10-16**, an EDA Playground run using **QuestaSim 2025.2** completed the basic testbench with the SVA module loaded: **1,073 cycles, 6,450 passed scoreboard checks, 0 failed checks**, and no reported assertion failures. Manual functional coverage reached **27/27 buckets (100%)**; this is not assertion or UVM covergroup coverage.
+On **2026-10-16**, I ran the basic testbench on EDA Playground using **QuestaSim 2025.2**. The run completed with the SVA module loaded: **1,073 cycles, 6,450 passed scoreboard checks, 0 failed checks**, and no reported assertion failures. Manual functional coverage reached **27/27 buckets (100%)**; this is not assertion or UVM covergroup coverage.
 
 See the [basic + SVA run report](docs/evidence/questa_sva_2026-10-16.md) for provenance, warnings, and scope.
 
-A separate **UVM 1.2 + SVA** run on the same day completed `sync_fifo_test` with **4,176 scoreboard checks**, **0 UVM warnings/errors/fatals**, and no reported assertion failures. Simulation finished at **10,485 ns**, with final reference occupancy **2** (the test does not require a final drain). See the [UVM run report and console excerpts](docs/evidence/questa_uvm_2026-10-16.md).
+I also ran a separate **UVM 1.2 + SVA** simulation on the same day. It completed `sync_fifo_test` with **4,176 scoreboard checks**, **0 UVM warnings/errors/fatals**, and no reported assertion failures. Simulation finished at **10,485 ns**, with final reference occupancy **2** (the test does not require a final drain). See the [UVM run report and console excerpts](docs/evidence/questa_uvm_2026-10-16.md).
 
-Both results are user-supplied EDA Playground runs, not CI executions pinned to an exact source commit. The UVM browser testbench includes a coverage-subscriber argument-name fix; the result does not establish a pass for the unmodified repository sources. No UVM covergroup or assertion coverage percentage was reported.
+I recorded both results from my EDA Playground runs. Neither run was a CI execution pinned to an exact source commit. My UVM browser testbench includes a coverage-subscriber argument-name fix, so I do not treat that result as a pass for the unmodified repository sources. I have not recorded a UVM covergroup or assertion coverage percentage.
 
 ## Run the portable regression
 
@@ -162,7 +162,7 @@ The testbench writes:
 sync_fifo.vcd
 ```
 
-Open it in GTKWave or another waveform viewer.
+I use GTKWave or another waveform viewer to inspect this file.
 
 A clean run should end with a zero failure count and:
 
@@ -212,11 +212,11 @@ For Questa with a source UVM installation:
 make uvm-questa UVM_HOME=/path/to/uvm
 ```
 
-You can adapt the same file list for VCS or Xcelium.
+I keep the file list available for adaptation to VCS or Xcelium.
 
 ## Verification philosophy
 
-The project does **not** use waveform inspection as the primary pass/fail method. A waveform is debug evidence. Correctness is judged by:
+I use waveforms for debugging. To judge correctness, I rely on:
 
 ```text
 independent reference model
@@ -230,18 +230,18 @@ functional coverage
 repeatable regression
 ```
 
-## Documents to read in order
+## How I organized the documentation
 
 1. `docs/RTL_SPEC.md` — exact FIFO behavior.
 2. `docs/DV_PLAN.md` — verification strategy and test matrix.
 3. `docs/TRACEABILITY.md` — requirement-to-check mapping.
 4. `docs/BASELINE_REVIEW.md` — what changed from the original project.
 5. `docs/WAVEFORM_GUIDE.md` — what to inspect in simulation.
-6. `docs/INTERVIEW_QA.md` — questions you should be able to answer yourself.
-7. `docs/GITHUB_GUIDE.md` — publish and maintain the project correctly.
+6. `docs/INTERVIEW_QA.md` — my explanations of design and verification decisions.
+7. `docs/GITHUB_GUIDE.md` — my workflow for publishing and maintaining the project.
 
 ## Reference basis
 
-The architecture was based on the linked VLSI Verify synchronous FIFO material, especially its discussion of synchronous operation and the counter-based Method 3. This repository does not copy that tutorial implementation; it defines a stricter accepted-operation policy and adds a full verification structure around the design.
+I used the VLSI Verify synchronous FIFO material as an architectural reference, particularly its explanation of synchronous operation and counter-based Method 3. I implemented my own RTL with an explicit accepted-operation policy and built the verification structure around it.
 
 Reference: `https://vlsiverify.com/verilog/verilog-codes/synchronous-fifo/`

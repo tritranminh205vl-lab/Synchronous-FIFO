@@ -2,9 +2,9 @@
 
 ## 1. Purpose
 
-This block is a single-clock FIFO used to buffer data between a producer and a consumer that operate in the same clock domain.
+I designed this single-clock FIFO to buffer data between a producer and a consumer operating in the same clock domain.
 
-The reference material describes synchronous FIFO read and write operations using the same clock, and presents a counter-based implementation where `empty` is detected with `count == 0` and `full` with `count == DEPTH`. This project uses that counter-based architecture while defining the boundary behavior more explicitly.
+The reference material describes synchronous FIFO read and write operations using the same clock, and presents a counter-based implementation where `empty` is detected with `count == 0` and `full` with `count == DEPTH`. I used that counter-based architecture and explicitly defined the boundary behavior.
 
 ## 2. Interface
 
@@ -56,7 +56,7 @@ This prevents overflow and underflow even when the environment asserts an illega
 | full | 0 | 1 | pop | DEPTH - 1 |
 | full | 1 | 1 | pop only | DEPTH - 1 |
 
-The two boundary cases are an intentional project specification:
+I specified the two boundary cases as follows:
 
 - **empty + push + pop:** push wins because there was no valid data to pop at the beginning of the cycle.
 - **full + push + pop:** pop wins because the FIFO was already full at the beginning of the cycle, so the new write request is rejected.
@@ -83,7 +83,7 @@ When `rst_n == 0` at the active edge:
 - `dout = 0`;
 - therefore `empty = 1`, `full = 0`.
 
-The memory array itself is not cleared because its contents are invalid whenever `count == 0`. This is normally more synthesis-friendly than resetting every memory bit.
+I do not clear the memory array during reset because its contents are invalid whenever `count == 0`. This is normally more synthesis-friendly than resetting every memory bit.
 
 ## 8. Architecture
 
@@ -106,7 +106,7 @@ pop ---------------->| read accept + rptr      |
 
 ## 9. Design improvements over the baseline
 
-The uploaded baseline already uses the stronger idea of counting **accepted** reads/writes rather than raw requests. The revised RTL keeps that behavior and improves project quality by:
+In my baseline RTL, I already counted **accepted** reads/writes rather than raw requests. I retained that behavior and revised the implementation by:
 
 - using SystemVerilog `logic` / `always_ff`;
 - making the specification for simultaneous operations explicit;

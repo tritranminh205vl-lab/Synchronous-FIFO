@@ -1,27 +1,32 @@
-# GitHub Guide — Synchronous FIFO RTL/DV
+# My GitHub Workflow — Synchronous FIFO RTL/DV
 
-This guide assumes Windows and Git Bash, but the same Git commands work in PowerShell or Linux/macOS.
+I maintain this repository with a Git workflow that keeps design, verification, and documentation changes reviewable. The commands below are my workflow reference for Windows with Git Bash; most also work in PowerShell or Linux/macOS.
 
-## 1. Install Git and identify yourself
+## 1. Git setup
 
-Check Git:
+I check the Git installation with:
 
 ```bash
 git --version
 ```
 
-One-time identity setup:
+For commit attribution, I configure my Git name and email locally. I use the following placeholders as a setup template and replace them with my own details before running the commands:
 
 ```bash
-git config --global user.name "YOUR NAME"
-git config --global user.email "YOUR_EMAIL@example.com"
+git config --global user.name "MY NAME"
+git config --global user.email "MY_EMAIL@example.com"
 ```
 
-## 2. Open the project folder
+## 2. Local checkout
 
-Extract the project, then open Git Bash in `sync_fifo_rtl_dv_project`.
+To obtain a local copy of my repository, I use:
 
-Check that you can see:
+```bash
+git clone https://github.com/tritranminh205vl-lab/Synchronous-FIFO.git
+cd Synchronous-FIFO
+```
+
+I check that the checkout contains:
 
 ```text
 rtl/
@@ -32,71 +37,38 @@ Makefile
 README.md
 ```
 
-## 3. Run the regression before committing
+## 3. Checks before committing
 
-With Icarus Verilog in PATH:
+For RTL or verification changes, my workflow calls for the portable regression with Icarus Verilog available in PATH:
 
 ```bash
 make basic
 ```
 
-On Windows without `make`:
+On Windows without Make, I use:
 
 ```bat
 scripts\run_basic.bat
 ```
 
-Optional checks:
+Additional checks, when the tools are installed, are:
 
 ```bash
 make lint
 make synth
 ```
 
-Do not push a knowingly failing regression to `main`.
+I treat a failing regression as an issue to resolve before merging an RTL or verification change into `main`.
 
-## 4. Create the local repository
+## 4. Feature branches and commits
 
-```bash
-git init
-git branch -M main
-git status
-```
-
-Recommended first commit:
-
-```bash
-git add .
-git commit -m "feat: add synchronous FIFO RTL and DV project"
-```
-
-## 5. Create the GitHub repository
-
-On GitHub:
-
-1. Create a new repository, for example `sync-fifo-rtl-dv`.
-2. Keep it empty initially if you already have this local README.
-3. Copy the repository HTTPS URL.
-
-Connect it:
-
-```bash
-git remote add origin https://github.com/YOUR_USERNAME/sync-fifo-rtl-dv.git
-git remote -v
-git push -u origin main
-```
-
-If GitHub asks for authentication, use the supported browser/credential-manager flow rather than putting a password or token into source files.
-
-## 6. Use feature branches like a real team
-
-Example for adding a new assertion:
+For a new assertion, my workflow uses a dedicated branch:
 
 ```bash
 git checkout -b test/add-pointer-assertions
 ```
 
-Edit files, run regression, then:
+After editing and running the relevant checks, I review and commit the change:
 
 ```bash
 git status
@@ -106,14 +78,13 @@ git commit -m "test: add FIFO pointer assertions"
 git push -u origin test/add-pointer-assertions
 ```
 
-Create a Pull Request into `main` and let GitHub Actions run.
+I use a pull request into `main` to review the diff and the GitHub Actions results.
 
-## 7. Suggested commit history for a portfolio project
+## 5. Commit organization
 
-Instead of uploading everything as one unexplained commit, a clean learning history can look like:
+I describe the actual scope of each change in the commit message. Examples for future work include:
 
 ```text
-chore: add synchronous FIFO project skeleton
 feat(rtl): implement parameterized counter-based FIFO
 test: add self-checking reference model and directed tests
 test: add random regression and coverage tracking
@@ -123,11 +94,11 @@ ci: add GitHub Actions RTL regression
 docs: add RTL spec DV plan and traceability
 ```
 
-If you already finished everything locally, do not fake old timestamps or rewrite history just to imitate this. Use clear commits from now on.
+These examples are naming conventions, not a reconstruction of my repository history. I preserve the actual commit history and timestamps.
 
-## 8. What the CI workflow does
+## 6. CI workflow
 
-`.github/workflows/rtl-regression.yml` runs for pushes and pull requests to `main` and performs:
+I included `.github/workflows/rtl-regression.yml` for pushes and pull requests to `main`. It runs:
 
 ```text
 Icarus self-checking simulation
@@ -137,23 +108,25 @@ Verilator lint
 Yosys synthesis sanity check
 ```
 
-UVM is not included in public CI because common commercial simulators require licenses. Run UVM locally in Questa/VCS/Xcelium and preserve the command/logs you use.
+I keep UVM outside this public CI workflow because the commercial simulators used for it require licenses. I document my EDA Playground runs separately under `docs/evidence/`, including the recorded commands and available console excerpts. Those reports retain the limits of the available source and coverage evidence.
 
-## 9. Repository description suggestion
+## 7. Repository description
 
-> Parameterized synchronous FIFO in SystemVerilog with self-checking DV, scoreboard, assertions, functional coverage, UVM environment, synthesis sanity checks, and CI.
+I describe the project as:
 
-## 10. What to show a recruiter
+> My parameterized synchronous FIFO in SystemVerilog, with self-checking DV, a scoreboard, assertions, functional coverage, a UVM environment, synthesis sanity checks, and CI.
 
-Keep the repository readable. A reviewer should be able to find, in this order:
+## 8. Project presentation
+
+I organize my project so a reviewer can follow the design and verification approach in this order:
 
 ```text
-README.md          -> what the block does and how to run it
-docs/RTL_SPEC.md   -> exact behavior
-docs/DV_PLAN.md    -> what you verified
-rtl/sync_fifo.sv   -> design implementation
-tb/basic/          -> portable proof that it works
-tb/sva/            -> protocol/invariant checks
-tb/uvm/            -> scalable DV structure
-GitHub Actions     -> repeatable automated regression
+README.md          -> project overview and run commands
+docs/RTL_SPEC.md   -> FIFO behavior I specified
+docs/DV_PLAN.md    -> my verification strategy and planned scenarios
+rtl/sync_fifo.sv   -> my design implementation
+tb/basic/          -> my portable self-checking testbench
+tb/sva/            -> my invariant and temporal checks
+tb/uvm/            -> my transaction-level verification environment
+GitHub Actions     -> automated regression workflow
 ```

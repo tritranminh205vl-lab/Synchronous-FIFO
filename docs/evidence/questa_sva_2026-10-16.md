@@ -2,7 +2,7 @@
 
 ## Result
 
-The basic self-checking FIFO testbench completed successfully with the SVA module loaded and no reported assertion or simulation errors.
+I ran my basic self-checking FIFO testbench successfully with the SVA module loaded and no reported assertion or simulation errors.
 
 | Item | Observed result |
 | --- | --- |
@@ -23,11 +23,11 @@ The basic self-checking FIFO testbench completed successfully with the SVA modul
 
 ## Evidence provenance and scope
 
-This report records the EDA Playground console output supplied by the project owner. It is not a new CI execution or an independently rerun simulation. The browser source snapshot, playground URL, random seed, and source commit SHA were not included in the supplied output, so this evidence is not pinned to an exact repository revision.
+I recorded this report from my EDA Playground console output. It documents that run rather than a new CI execution or an independent rerun. I did not retain the browser source snapshot, playground URL, random seed, or source commit SHA with the output, so I cannot pin this evidence to an exact repository revision.
 
 This run covers the basic testbench with SVA, **not the UVM testbench**. No successful UVM simulation result is recorded here.
 
-The reported 100% is the testbench's manual functional coverage bucket score. It is not assertion coverage, code coverage, or UVM covergroup coverage. The SVA module was loaded and no assertion failures were reported; an intentional assertion-failure control run and per-property coverage report have not been supplied.
+The reported 100% is the testbench's manual functional coverage bucket score. It is not assertion coverage, code coverage, or UVM covergroup coverage. The SVA module was loaded and no assertion failures were reported. I have not recorded an intentional assertion-failure control run or a per-property coverage report.
 
 ## Command recorded by EDA Playground
 
@@ -35,11 +35,11 @@ The reported 100% is the testbench's manual functional coverage bucket score. It
 qrun -batch -access=rw+/. '-timescale' '1ns/1ns' -mfcu design.sv testbench.sv '-voptargs=+acc=npr' -do " run -all; exit"
 ```
 
-The two browser files contain the RTL, basic testbench, SVA module, and bind declaration. The top module in the supplied log is `tb_sync_fifo`.
+The two browser files contain the RTL, basic testbench, SVA module, and bind declaration. The top module in my recorded log is `tb_sync_fifo`.
 
 ## Console excerpts
 
-The following are selected excerpts from the supplied run, rather than a complete raw transcript.
+I retained the following selected console excerpts from my run; they are not a complete raw transcript.
 
 ```text
 # Loading work.design_sv_unit(fast)
@@ -102,5 +102,5 @@ Neither warning prevented this simulation from completing.
 
 ## Follow-up verification
 
-- Run a deliberate failing assertion once to confirm error detection, restore the original property, then rerun and retain both logs.
-- Run `tb_sync_fifo_uvm` separately with UVM 1.2 and record scoreboard activity, UVM error/fatal counts, and any SVA failures.
+- I plan to run a deliberate failing assertion to confirm error detection, restore the original property, then rerun and retain both logs.
+- I recorded the separate `tb_sync_fifo_uvm` run with UVM 1.2 in the [UVM + SVA report](questa_uvm_2026-10-16.md), including scoreboard activity and reported error counts.

@@ -1,5 +1,7 @@
 # Requirement-to-Verification Traceability
 
+I use this matrix to link each FIFO requirement to my RTL implementation and the corresponding verification checks.
+
 | Requirement | RTL implementation | Verification |
 |---|---|---|
 | Same clock for read/write | single `always_ff @(posedge clk)` | all tests use common `clk` |
